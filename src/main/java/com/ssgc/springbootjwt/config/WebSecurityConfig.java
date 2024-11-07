@@ -15,7 +15,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@SuppressWarnings("deprecation")
+/**
+ * WebSecurityConfig is responsible for configuring security settings
+ * for the application, including authentication and authorization.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -28,50 +31,67 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	private UserDetailsService jwtUserDetailsService;
 
 	@Autowired
-	private JwtRequestFilter jwtRequestFilter;
-	
+	private JwtRequestFilter jwtRequestFilter; // Filter to validate JWT tokens
+
+	/**
+     * Configures the global authentication manager to use the custom user details service
+     * and specifies the password encoder.
+     *
+     * @param auth The AuthenticationManagerBuilder
+     * @throws Exception if there is an error during authentication configuration
+     */
 	@Autowired
 	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-		// configure AuthenticationManager so that it knows from where to load
-		// user for matching credentials
-		// Use BCryptPasswordEncoder
-		auth.userDetailsService(jwtUserDetailsService).passwordEncoder(passwordEncoder());
+		auth.userDetailsService(jwtUserDetailsService).passwordEncoder(passwordEncoder()); // Set up user details service and password encoder
 	}
 
+	/**
+     * Provides a PasswordEncoder bean for encoding passwords.
+     *
+     * @return a PasswordEncoder instance
+     */
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
+		return new BCryptPasswordEncoder(); // Using BCrypt for password hashing
 	}
 
+	/**
+     * Provides the AuthenticationManager bean for authentication.
+     *
+     * @return the AuthenticationManager
+     * @throws Exception if there is an error during the creation of the AuthenticationManager
+     */
 	@Bean
 	@Override
 	public AuthenticationManager authenticationManagerBean() throws Exception {
 		return super.authenticationManagerBean();
 	}
 
+	/**
+     * Configures HTTP security for the application.
+     *
+     * @param httpSecurity The HttpSecurity object to configure
+     * @throws Exception if there is an error during configuration
+     */
 	@Override
 	protected void configure(HttpSecurity httpSecurity) throws Exception {
-		// We don't need CSRF for this example
+		// Disable CSRF protection
 		httpSecurity.csrf().disable()
-				// dont authenticate this particular request
-				.authorizeRequests().antMatchers("/authenticate", "/register","/update").permitAll().
-				// all other requests need to be authenticated
-				anyRequest().authenticated().and().
-				// make sure we use stateless session; session won't be used to
-				// store user's state.
-				exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+				// Allow unauthenticated access to specific endpoints
+				.authorizeRequests().antMatchers("/authenticate", "/register", "/update", "/refreshtoken", "/signout").permitAll()
+				// All other requests need to be authenticated
+				.anyRequest().authenticated()
+				.and()
+				// Handle authentication exceptions
+				.exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint) // Handle authentication errors
+	            .and()
+				// Set session management to stateless
+				.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 				
-		// Content Security Policy to prevent malicious scripts
+		// Content Security Policy (CSP) to prevent malicious scripts
 		httpSecurity.headers().contentSecurityPolicy("script-src 'self'").and().xssProtection().block(false);
-		//Set a session timeout to minimize risks of session fixation attacks
-		httpSecurity.sessionManagement()
-	    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-	    .invalidSessionUrl("/session-invalid");
 		
-		//httpSecurity.requiresChannel().anyRequest().requiresSecure();
-		
-		// Add a filter to validate the tokens with every request
+		// Add JWT request filter to the security chain
 		httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 	}
 }

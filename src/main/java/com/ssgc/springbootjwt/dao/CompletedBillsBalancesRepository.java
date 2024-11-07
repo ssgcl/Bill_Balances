@@ -1,22 +1,28 @@
 package com.ssgc.springbootjwt.dao;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page; // Import for pagination support
+import org.springframework.data.domain.Pageable; // Import for Pageable object
+import org.springframework.data.jpa.repository.JpaRepository; // Import for JPA repository
+import org.springframework.data.jpa.repository.Query; // Import for defining custom queries
+import org.springframework.data.repository.query.Param; // Import for parameterized queries
+import org.springframework.stereotype.Repository; // Import for repository annotation
 
-import com.ssgc.springbootjwt.model.COMPLETED_BILLS_BALANCES;
+import com.ssgc.springbootjwt.model.COMPLETED_BILLS_BALANCES; // Import for the model class
 
-
-
+/**
+ * Repository interface for accessing COMPLETED_BILLS_BALANCES data.
+ * It extends JpaRepository to provide CRUD operations.
+ */
 @Repository
 public interface CompletedBillsBalancesRepository extends JpaRepository<COMPLETED_BILLS_BALANCES, Long> {
-	//@Query("SELECT acct_id, bill_id, billing_month, bill_completion_date, due_date, amount_before_due_date, amount_after_due_date FROM BILLS_BALANCES cbb WHERE cbb.acct_id = :accountId  AND ROWNUM<2 ORDER BY cbb.bill_completion_date DESC ")
-	//Page<BILLS_BALANCES> findByAcctIdOrderByBillCompletionDateDesc(@Param("accountId") String accountId, Pageable pageable);
 
-	
-	@Query("SELECT cbb FROM COMPLETED_BILLS_BALANCES cbb WHERE cbb.ACCOUNT_ID = :ACCOUNT_ID AND cbb.BILLING_MONTH = :BILLING_MONTH  ORDER BY cbb.bill_completion_date DESc")
-	Page<COMPLETED_BILLS_BALANCES> findByAcctId(@Param("ACCOUNT_ID") String acctId, @Param("BILLING_MONTH") String billingMnth, Pageable pageable);
+	/**
+     * Finds completed bills balances by account ID with pagination.
+     *
+     * @param acctId the account ID to search for
+     * @param pageable pagination information
+     * @return a page of completed bills balances associated with the given account ID
+     */
+	@Query("SELECT cbb FROM COMPLETED_BILLS_BALANCES cbb WHERE cbb.ACCOUNT_ID = :ACCOUNT_ID ORDER BY cbb.bill_completion_date DESC")
+	Page<COMPLETED_BILLS_BALANCES> findByAcctId(@Param("ACCOUNT_ID") String acctId, Pageable pageable);
 }
